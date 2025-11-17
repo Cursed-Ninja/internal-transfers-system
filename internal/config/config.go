@@ -15,10 +15,7 @@ type Config struct {
 }
 
 type PostgresConfig struct {
-	Database string
-	Port     string
-	Username string
-	Password string
+	ConnStr string
 }
 
 type AppEnv string
@@ -26,6 +23,7 @@ type AppEnv string
 const (
 	AppEnvLocal       AppEnv = "local"
 	AppEnvDevelopment AppEnv = "development"
+	AppEnvProduction  AppEnv = "production"
 )
 
 var (
@@ -49,10 +47,7 @@ func NewConfig(env AppEnv) *Config {
 		Port: viper.GetString("server.port"),
 		Env:  env,
 		PostgresConfig: &PostgresConfig{
-			Database: viper.GetString("postgres.db"),
-			Username: viper.GetString("postgres.username"),
-			Password: viper.GetString("postgres.password"),
-			Port:     viper.GetString("postgres.port"),
+			ConnStr: viper.GetString("postgres.connstr"),
 		},
 	}
 }

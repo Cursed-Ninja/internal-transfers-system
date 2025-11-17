@@ -1,13 +1,18 @@
 package server
 
-import "github.com/cursed-ninja/internal-transfers-system/internal/config"
+import (
+	"github.com/cursed-ninja/internal-transfers-system/internal/config"
+	"github.com/cursed-ninja/internal-transfers-system/internal/storage.go"
+)
 
 type Server struct {
-	cfg *config.Config
+	cfg   *config.Config
+	store storage.Storage
 }
 
-func NewServer(cfg *config.Config) *Server {
+func NewServer(cfg *config.Config, store storage.Storage) *Server {
 	return &Server{
-		cfg: cfg,
+		cfg:   cfg,
+		store: store,
 	}
 }

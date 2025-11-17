@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,20 +9,38 @@ import (
 	"time"
 
 	"github.com/cursed-ninja/internal-transfers-system/internal/config"
+	"github.com/cursed-ninja/internal-transfers-system/internal/migrations"
 	"github.com/cursed-ninja/internal-transfers-system/internal/server"
+	"github.com/cursed-ninja/internal-transfers-system/internal/storage.go"
+	"github.com/cursed-ninja/internal-transfers-system/internal/utils"
+	"go.uber.org/zap"
 )
 
 func main() {
+	ctx := context.Background()
+
 	appEnv := config.GetEnv()
+	logger := utils.GetLogger(appEnv)
 
 	err := config.InitViper(appEnv)
 	if err != nil {
-		log.Fatalf("failed to initialize viper: %v", err)
+		logger.Fatal("failed to initialize viper", zap.Error(err))
 	}
 
 	cfg := config.NewConfig(appEnv)
 
-	srv := startServer(cfg)
+	pgClient, err := storage.NewPostgressManager(ctx, cfg.PostgresConfig)
+	if err != nil {
+		logger.Fatal("failed to initialze postgres", zap.Error(err))
+	}
+
+	if err := migrations.Run(ctx, pgClient.DB(), logger); err != nil {
+		logger.Fatal("failed to run migrations", zap.Error(err))
+	}
+
+	server := server.NewServer(cfg, pgClient)
+
+	httpSrv := startServer(cfg, server, logger)
 
 	// Listen for shutdown signal
 	stop := make(chan os.Signal, 1)
@@ -31,34 +48,34 @@ func main() {
 
 	// Wait for shutdown signal
 	<-stop
-	log.Println("Shutdown signal received")
+	logger.Info("Shutdown signal received")
 
-	stopServer(srv)
+	stopServer(ctx, httpSrv, logger)
 }
 
-func startServer(cfg *config.Config) *http.Server {
+func startServer(cfg *config.Config, server *server.Server, log *zap.Logger) *http.Server {
 	mux := http.NewServeMux()
 	server.BindRoutes(mux)
 
-	server := &http.Server{
+	httpSrv := &http.Server{
 		Addr:    cfg.Port,
 		Handler: mux,
 	}
 
 	go func() {
-		log.Printf("HTTP server listening on %s\n", cfg.Port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen and serve: %v\n", err)
+		log.Info("HTTP server listening", zap.String("port", cfg.Port))
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Failed to listen and serve", zap.Error(err))
 		}
 	}()
-	return server
+	return httpSrv
 }
 
-func stopServer(server *http.Server) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func stopServer(ctx context.Context, httpSrv *http.Server, log *zap.Logger) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("HTTP server shutdown error: %v\n", err)
+	if err := httpSrv.Shutdown(ctx); err != nil {
+		log.Error("Failed to shutdown HTTP server", zap.Error(err))
 	}
-	log.Println("Server stopped")
+	log.Info("Server stopped")
 }
