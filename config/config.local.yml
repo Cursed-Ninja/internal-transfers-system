@@ -1,0 +1,7 @@
+server:
+  port: 8080
+postgres:
+  db: internal_transfers
+  user: internal_transfers
+  password: internal_transfers
+  port: 5432
