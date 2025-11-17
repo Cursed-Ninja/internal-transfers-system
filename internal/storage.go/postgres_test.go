@@ -39,7 +39,7 @@ func TestCreateAccountSuccess(t *testing.T) {
 			name:        "duplicate account",
 			args:        []driver.Value{"acc-1", 100.0},
 			err:         &pq.Error{Code: "23505"},
-			expectedErr: errAccountExists,
+			expectedErr: ErrAccountExists,
 		},
 	}
 
@@ -92,7 +92,7 @@ func TestGetAccountDetails(t *testing.T) {
 			prepare: func(m sqlmock.Sqlmock) {
 				m.ExpectQuery(`SELECT id, balance FROM accounts`).WithArgs("missing").WillReturnError(sql.ErrNoRows)
 			},
-			expectedErr: errAccountNotFound,
+			expectedErr: ErrAccountNotFound,
 		},
 	}
 
@@ -147,7 +147,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectRollback()
 			},
 			amount:      200.0,
-			expectedErr: errDestinationAccountMsg,
+			expectedErr: ErrDestinationAccountMsg,
 		},
 		{
 			name: "source missing",
@@ -158,7 +158,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectRollback()
 			},
 			amount:      200.0,
-			expectedErr: errSourceAccountMsg,
+			expectedErr: ErrSourceAccountMsg,
 		},
 		{
 			name: "insufficient funds",
@@ -169,7 +169,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectRollback()
 			},
 			amount:      100.0,
-			expectedErr: errInsufficientFundsMsg,
+			expectedErr: ErrInsufficientFundsMsg,
 		},
 		{
 			name: "withdraw update error",
@@ -181,7 +181,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectRollback()
 			},
 			amount:      100.0,
-			expectedErr: errProcessTransactionMsg,
+			expectedErr: ErrProcessTransactionMsg,
 		},
 		{
 			name: "deposit update error",
@@ -194,7 +194,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectRollback()
 			},
 			amount:      100.0,
-			expectedErr: errProcessTransactionMsg,
+			expectedErr: ErrProcessTransactionMsg,
 		},
 	}
 

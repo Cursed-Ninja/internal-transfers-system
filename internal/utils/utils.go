@@ -33,3 +33,10 @@ func GetLogger(appEnv config.AppEnv) *zap.Logger {
 	}
 	return logger
 }
+
+func LoggerWithKey(ctx context.Context, field zap.Field) (context.Context, *zap.Logger) {
+	logger := ContextLogger(ctx)
+	logger.With(field)
+	ctx = context.WithValue(ctx, LoggerContextKey, logger)
+	return ctx, logger
+}
