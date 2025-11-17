@@ -4,12 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/cursed-ninja/internal-transfers-system/internal/config"
 	"github.com/cursed-ninja/internal-transfers-system/internal/utils"
 	"github.com/lib/pq"
 	"go.uber.org/zap"
+)
+
+const (
+	errAccountExists         = "account already exists"
+	errCreateAccountMsg      = "internal Server Error: failed to create account"
+	errAccountNotFound       = "account doesn't exist"
+	errGetAccountDetailsMsg  = "internal Server Error: failed to get account details"
+	errProcessTransactionMsg = "internal Server Error: failed to process transaction"
+	errDestinationAccountMsg = "destination account not found"
+	errSourceAccountMsg      = "source account not found"
+	errInsufficientFundsMsg  = "insufficient funds in source account"
 )
 
 type PostgressStorage struct {
@@ -44,10 +54,10 @@ func (p *PostgressStorage) CreateAccount(ctx context.Context, accountID string, 
 		logger.Error("Failed to create account", zap.Error(err))
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == "23505" {
-				return fmt.Errorf("Account already exists")
+				return errors.New(errAccountExists)
 			}
 		}
-		return fmt.Errorf("internal Server Error: failed to create account")
+		return errors.New(errCreateAccountMsg)
 	}
 	return nil
 }
@@ -66,9 +76,9 @@ func (p *PostgressStorage) GetAccountDetails(ctx context.Context, accountID stri
 	if err != nil {
 		logger.Error("Failed to get account details", zap.Error(err))
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("Account doesn't exist")
+			return nil, errors.New(errAccountNotFound)
 		}
-		return nil, fmt.Errorf("internal Server Error: failed to get account details")
+		return nil, errors.New(errGetAccountDetailsMsg)
 	}
 
 	return &acc, nil
@@ -108,7 +118,7 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 	tx, err = p.db.BeginTx(ctx, nil)
 	if err != nil {
 		logger.Error("Failed to create transaction", zap.Error(err))
-		return fmt.Errorf("internal Server Error: failed to process transaction")
+		return errors.New(errProcessTransactionMsg)
 	}
 
 	defer func() {
@@ -128,35 +138,35 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 
 	var tmp int
 	if err = tx.QueryRowContext(ctx, destExistsQuery, destAccID).Scan(&tmp); err != nil {
-		logger.Error("failed to get source account details", zap.Error(err))
+		logger.Error("failed to get destination account details", zap.Error(err))
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("destination account not found: %w", err)
+			return errors.New(errDestinationAccountMsg)
 		}
-		return fmt.Errorf("internal Server Error: failed to process transaction")
+		return errors.New(errProcessTransactionMsg)
 	}
 
 	var sourceBalance float64
 	if err = tx.QueryRowContext(ctx, sourceBalanceQuery, sourceAccID).Scan(&sourceBalance); err != nil {
-		logger.Error("failed to get destination account details", zap.Error(err))
+		logger.Error("failed to get source account details", zap.Error(err))
 		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("source account not found: %w", err)
+			return errors.New(errSourceAccountMsg)
 		}
-		return fmt.Errorf("internal Server Error: failed to process transaction")
+		return errors.New(errProcessTransactionMsg)
 	}
 
 	if sourceBalance < amount {
 		logger.Error("insufficient funds in source account")
-		return fmt.Errorf("insufficient funds in source account %s", sourceAccID)
+		return errors.New(errInsufficientFundsMsg)
 	}
 
 	if _, err = tx.ExecContext(ctx, withdrawQuery, amount, sourceAccID); err != nil {
 		logger.Error("failed to update source account details", zap.Error(err))
-		return fmt.Errorf("internal Server Error: failed to process transaction")
+		return errors.New(errProcessTransactionMsg)
 	}
 
 	if _, err = tx.ExecContext(ctx, depositQuery, amount, destAccID); err != nil {
 		logger.Error("failed to update destination account details", zap.Error(err))
-		return fmt.Errorf("internal Server Error: failed to process transaction")
+		return errors.New(errProcessTransactionMsg)
 	}
 
 	return nil

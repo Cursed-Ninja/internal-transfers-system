@@ -7,5 +7,7 @@ build:
 	go build ./...
 
 run: 
-	APP_ENV=local \
-	go run main.go
+	go run cmd/server/main.go
+
+local-compose:
+	docker compose -f docker-compose.local.yml up -d
