@@ -1,0 +1,4 @@
+server:
+  port: :8080
+postgres:
+  connstr: "postgres://internal_transfers:internal_transfers@postgres:5432/internal_transfers?sslmode=disable"
