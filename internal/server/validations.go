@@ -7,6 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// Validation errors for account creation and transaction requests.
 var (
 	ErrMissingAccountID       = errors.New("account_id is required")
 	ErrMissingBalance         = errors.New("balance is required")
@@ -19,6 +20,8 @@ var (
 	ErrNonPositiveAmount      = errors.New("amount must be positive")
 )
 
+// ValidateCreateAccount checks the incoming account creation request for required fields,
+// trims whitespace, parses the initial balance, and ensures it is non-negative.
 func ValidateCreateAccount(req *createAccountRequest) (decimal.Decimal, error) {
 	req.AccountID = strings.TrimSpace(req.AccountID)
 	req.InitialBalance = strings.TrimSpace(req.InitialBalance)
@@ -43,6 +46,8 @@ func ValidateCreateAccount(req *createAccountRequest) (decimal.Decimal, error) {
 	return balance, nil
 }
 
+// ValidateProcessTransaction checks the transaction request for required fields,
+// trims whitespace, parses the amount, and ensures it is positive.
 func ValidateProcessTransaction(req *processTransactionRequest) (decimal.Decimal, error) {
 	req.SourceAccID = strings.TrimSpace(req.SourceAccID)
 	req.DestAccID = strings.TrimSpace(req.DestAccID)

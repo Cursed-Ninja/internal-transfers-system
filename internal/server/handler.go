@@ -11,6 +11,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// Request and Response Structs
+
 type createAccountRequest struct {
 	AccountID      string `json:"account_id"`
 	InitialBalance string `json:"initial_balance"`
@@ -27,11 +29,13 @@ type processTransactionRequest struct {
 	Amount      string `json:"amount"`
 }
 
+// HealthHandler returns a simple status for health checks.
 func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
 
+// CreateAccount handles POST /accounts requests to create a new account.
 func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := utils.ContextLogger(ctx)
@@ -69,6 +73,7 @@ func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// GetAccountDetails handles GET /accounts/{accountID} requests.
 func (s *Server) GetAccountDetails(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := utils.ContextLogger(ctx)
@@ -110,6 +115,7 @@ func (s *Server) GetAccountDetails(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ProcessTransaction handles POST /transactions requests to transfer funds between accounts.
 func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := utils.ContextLogger(ctx)

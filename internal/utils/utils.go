@@ -12,6 +12,7 @@ type contextKey string
 
 const LoggerContextKey contextKey = "requestLogger"
 
+// ContextLogger returns the logger stored in context, or a default logger if none exists.
 func ContextLogger(ctx context.Context) *zap.Logger {
 	logger, ok := ctx.Value(LoggerContextKey).(*zap.Logger)
 	if !ok || logger == nil {
@@ -20,6 +21,7 @@ func ContextLogger(ctx context.Context) *zap.Logger {
 	return logger
 }
 
+// GetLogger initializes and returns a zap.Logger based on the application environment.
 func GetLogger(appEnv config.AppEnv) *zap.Logger {
 	logger, err := zap.NewProduction()
 
@@ -34,6 +36,7 @@ func GetLogger(appEnv config.AppEnv) *zap.Logger {
 	return logger
 }
 
+// LoggerWithKey adds a field to the logger in the context and returns the updated context and logger.
 func LoggerWithKey(ctx context.Context, field zap.Field) (context.Context, *zap.Logger) {
 	logger := ContextLogger(ctx)
 	logger.With(field)

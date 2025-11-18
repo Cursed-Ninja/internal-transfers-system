@@ -13,11 +13,15 @@ import (
 //go:embed *.sql
 var migrationFiles embed.FS
 
+// migration represents a single DB migration.
 type migration struct {
 	name string
 	sql  string
 }
 
+// Run applies all migrations to the database.
+// It reads migration files from the embedded filesystem and executes them in order.
+// If any migration fails, it returns an error.
 func Run(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
 	migs, err := loadMigrations()
 	if err != nil {
@@ -35,6 +39,10 @@ func Run(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
 	return nil
 }
 
+// loadMigrations reads migration files from the embedded filesystem
+// and returns a slice of migration structs.
+// If reading fails, it returns an error.
+// Migrations files are expected to be prefixed with timestamp for ordering.
 func loadMigrations() ([]migration, error) {
 	entries, err := fs.ReadDir(migrationFiles, ".")
 	if err != nil {

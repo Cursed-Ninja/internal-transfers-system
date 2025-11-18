@@ -12,10 +12,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// PostgressStorage implements the Storage interface using a PostgreSQL database.
 type PostgressStorage struct {
 	db *sql.DB
 }
 
+// NewPostgressManager creates a new PostgressStorage instance with the given configuration.
 func NewPostgressManager(ctx context.Context, cfg *config.PostgresConfig) (*PostgressStorage, error) {
 	db, err := sql.Open("postgres", cfg.ConnStr)
 	if err != nil {
@@ -27,10 +29,13 @@ func NewPostgressManager(ctx context.Context, cfg *config.PostgresConfig) (*Post
 	}, nil
 }
 
+// DB returns the underlying sql.DB instance.
 func (p *PostgressStorage) DB() *sql.DB {
 	return p.db
 }
 
+// CreateAccount inserts a new account with the given ID and balance.
+// Returns ErrAccountExists if the account already exists or ErrCreateAccountMsg on internal failures.
 func (p *PostgressStorage) CreateAccount(ctx context.Context, accountID string, balance decimal.Decimal) error {
 	const query = `
 		INSERT INTO accounts (id, balance)
@@ -52,6 +57,8 @@ func (p *PostgressStorage) CreateAccount(ctx context.Context, accountID string, 
 	return nil
 }
 
+// GetAccountDetails fetches the account by ID.
+// Returns ErrAccountNotFound if the account doesn't exist or ErrGetAccountDetailsMsg on internal failures.
 func (p *PostgressStorage) GetAccountDetails(ctx context.Context, accountID string) (*Account, error) {
 	const query = `
 		SELECT id, balance
@@ -74,6 +81,9 @@ func (p *PostgressStorage) GetAccountDetails(ctx context.Context, accountID stri
 	return &acc, nil
 }
 
+// ProcessTransaction moves a specified amount from sourceAccID to destAccID.
+// Validates existence, sufficient funds, and performs updates within a DB transaction.
+// Returns relevant errors on failure.
 func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, destAccID string, amount decimal.Decimal) (err error) {
 	const (
 		// Query to check destination Acc exists

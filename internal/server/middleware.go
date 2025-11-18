@@ -2,8 +2,6 @@ package server
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// loggingMiddleware attaches a request ID and logger to each incoming HTTP request's context.
 func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		reqID := newRequestID()
@@ -23,10 +22,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// newRequestID generates a new unique request ID based on the current timestamp.
 func newRequestID() string {
-	buf := make([]byte, 16)
-	if _, err := rand.Read(buf); err != nil {
-		return strconv.FormatInt(time.Now().UnixNano(), 10)
-	}
-	return hex.EncodeToString(buf)
+	return strconv.FormatInt(time.Now().UnixNano(), 10)
 }

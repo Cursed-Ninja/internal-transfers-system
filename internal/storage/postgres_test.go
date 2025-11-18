@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// newTestStorage creates a PostgressStorage instance with sqlmock and returns a cleanup function.
 func newTestStorage(t *testing.T) (*PostgressStorage, sqlmock.Sqlmock, func()) {
 	t.Helper()
 	db, mock, err := sqlmock.New()
@@ -22,6 +23,7 @@ func newTestStorage(t *testing.T) (*PostgressStorage, sqlmock.Sqlmock, func()) {
 	return &PostgressStorage{db: db}, mock, func() { db.Close() }
 }
 
+// TestCreateAccountSuccess validates account creation scenarios, including success and duplicate account errors.
 func TestCreateAccountSuccess(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -70,6 +72,7 @@ func TestCreateAccountSuccess(t *testing.T) {
 	}
 }
 
+// TestGetAccountDetails validates retrieval of account details for existing and missing accounts.
 func TestGetAccountDetails(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -119,6 +122,8 @@ func TestGetAccountDetails(t *testing.T) {
 	}
 }
 
+// TestProcessTransaction validates transaction processing scenarios, including successful transfers,
+// insufficient funds, missing accounts, and update errors.
 func TestProcessTransaction(t *testing.T) {
 	tests := []struct {
 		name        string

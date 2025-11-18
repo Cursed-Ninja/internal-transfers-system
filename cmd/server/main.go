@@ -20,40 +20,41 @@ import (
 func main() {
 	ctx := context.Background()
 
+	// Initialize configuration and logger
 	appEnv := config.GetEnv()
 	logger := utils.GetLogger(appEnv)
-
 	err := config.InitViper(appEnv)
 	if err != nil {
 		logger.Fatal("failed to initialize viper", zap.Error(err))
 	}
-
 	cfg := config.NewConfig(appEnv)
 
+	// Initialize Postgres storage
 	pgClient, err := storage.NewPostgressManager(ctx, cfg.PostgresConfig)
 	if err != nil {
 		logger.Fatal("failed to initialze postgres", zap.Error(err))
 	}
 
+	// Run database migrations
 	if err := migrations.Run(ctx, pgClient.DB(), logger); err != nil {
 		logger.Fatal("failed to run migrations", zap.Error(err))
 	}
 
+	// Initialize and start the server
 	server := server.NewServer(cfg, pgClient)
-
 	httpSrv := startServer(cfg, server, logger)
 
-	// Listen for shutdown signal
+	// Listen for OS shutdown signal
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	// Wait for shutdown signal
 	<-stop
 	logger.Info("Shutdown signal received")
 
+	// Stop the server gracefully
 	stopServer(ctx, httpSrv, logger)
 }
 
+// startServer starts the HTTP server and binds the routes.
 func startServer(cfg *config.Config, server *server.Server, log *zap.Logger) *http.Server {
 	r := mux.NewRouter()
 	server.BindRoutes(r)
@@ -72,6 +73,7 @@ func startServer(cfg *config.Config, server *server.Server, log *zap.Logger) *ht
 	return httpSrv
 }
 
+// stopServer gracefully shuts down the HTTP server.
 func stopServer(ctx context.Context, httpSrv *http.Server, log *zap.Logger) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

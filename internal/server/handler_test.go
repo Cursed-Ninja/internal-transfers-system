@@ -16,6 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// TestHealthHandler tests the HealthHandler endpoint.
 func TestHealthHandler(t *testing.T) {
 	s := Server{
 		cfg:   &config.Config{},
@@ -31,6 +32,8 @@ func TestHealthHandler(t *testing.T) {
 	assert.JSONEq(t, `{"status":"ok"}`, w.Body.String())
 }
 
+// TestCreateAccount tests the CreateAccount endpoint.
+// Scenarios include successful account creation, invalid inputs, duplicate accounts, and internal errors.
 func TestCreateAccount(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -117,6 +120,8 @@ func TestCreateAccount(t *testing.T) {
 	}
 }
 
+// TestGetAccountDetails tests the GetAccountDetails endpoint.
+// Scenarios include successful retrieval, account not found, and internal errors.
 func TestGetAccountDetails(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -187,6 +192,8 @@ func TestGetAccountDetails(t *testing.T) {
 	}
 }
 
+// TestProcessTransaction tests the ProcessTransaction endpoint.
+// Scenarios include successful transaction, invalid inputs, insufficient funds, account not found, and internal errors.
 func TestProcessTransaction(t *testing.T) {
 	tests := []struct {
 		name           string

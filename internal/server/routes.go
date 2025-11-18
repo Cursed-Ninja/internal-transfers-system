@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// BindRoutes binds the server's HTTP handlers to the router.
 func (s *Server) BindRoutes(r *mux.Router) {
 	r.Handle("/health", s.loggingMiddleware(http.HandlerFunc(s.HealthHandler))).Methods(http.MethodGet)
 	r.Handle("/accounts", s.loggingMiddleware(http.HandlerFunc(s.CreateAccount))).Methods(http.MethodPost)

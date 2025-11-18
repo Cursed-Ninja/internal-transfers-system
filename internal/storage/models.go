@@ -2,6 +2,7 @@ package storage
 
 import "github.com/shopspring/decimal"
 
+// Error definitions for storage operations
 const (
 	ErrAccountExists         = "account already exists"
 	ErrCreateAccountMsg      = "internal Server Error: failed to create account"
@@ -13,7 +14,7 @@ const (
 	ErrInsufficientFundsMsg  = "insufficient funds in source account"
 )
 
-// Represents in-mem model for database object
+// Account represents an account in storage, with a unique ID and balance.
 type Account struct {
 	ID      string          `json:"id"`
 	Balance decimal.Decimal `json:"balance"`
