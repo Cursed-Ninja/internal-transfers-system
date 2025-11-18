@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
-	"github.com/cursed-ninja/internal-transfers-system/internal/storage.go"
+	"github.com/cursed-ninja/internal-transfers-system/internal/storage"
 	"github.com/cursed-ninja/internal-transfers-system/internal/utils"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -17,7 +19,7 @@ type createAccountRequest struct {
 }
 
 type accountResponse struct {
-	ID      string `json:"id"`
+	ID      string `json:"account_id"`
 	Balance string `json:"balance"`
 }
 
@@ -43,6 +45,9 @@ func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid JSON format", http.StatusBadRequest)
 		return
 	}
+
+	req.AccountID = strings.TrimSpace(req.AccountID)
+	req.InitialBalance = strings.TrimSpace(req.InitialBalance)
 
 	if req.AccountID == "" {
 		logger.Error("missing account_id in request body")
@@ -88,8 +93,9 @@ func (s *Server) GetAccountDetails(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	accountID := r.PathValue("accountID")
-	if accountID == "" || accountID == r.URL.Path {
+	vars := mux.Vars(r)
+	accountID := strings.TrimSpace(vars["accountID"])
+	if accountID == "" {
 		logger.Error("missing account_id in URL path")
 		http.Error(w, "account_id is required in URL path", http.StatusBadRequest)
 		return
@@ -134,6 +140,10 @@ func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.SourceAccID = strings.TrimSpace(req.SourceAccID)
+	req.DestAccID = strings.TrimSpace(req.DestAccID)
+	req.Amount = strings.TrimSpace(req.Amount)
+
 	if req.SourceAccID == "" {
 		logger.Error("missing source_account_id in request body")
 		http.Error(w, "source_account_id is required", http.StatusBadRequest)
@@ -168,10 +178,11 @@ func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 		logger.Error("failed to process transaction", zap.Error(err))
 		errorMsg := err.Error()
 		statusCode := http.StatusInternalServerError
-		if errorMsg == storage.ErrSourceAccountMsg ||
-			errorMsg == storage.ErrDestinationAccountMsg ||
-			errorMsg == storage.ErrInsufficientFundsMsg {
-			statusCode = http.StatusConflict
+		switch errorMsg {
+		case storage.ErrSourceAccountMsg, storage.ErrDestinationAccountMsg:
+			statusCode = http.StatusNotFound
+		case storage.ErrInsufficientFundsMsg:
+			statusCode = http.StatusBadRequest
 		}
 		http.Error(w, errorMsg, statusCode)
 		return

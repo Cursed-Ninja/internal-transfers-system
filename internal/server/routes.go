@@ -1,10 +1,14 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
 
-func (s *Server) BindRoutes(mux *http.ServeMux) {
-	mux.Handle("GET /health", s.loggingMiddleware(http.HandlerFunc(s.HealthHandler)))
-	mux.Handle("POST /accounts", s.loggingMiddleware(http.HandlerFunc(s.CreateAccount)))
-	mux.Handle("GET /accounts/{accountID}", s.loggingMiddleware(http.HandlerFunc(s.GetAccountDetails)))
-	mux.Handle("POST /transactions", s.loggingMiddleware(http.HandlerFunc(s.ProcessTransaction)))
+	"github.com/gorilla/mux"
+)
+
+func (s *Server) BindRoutes(r *mux.Router) {
+	r.Handle("/health", s.loggingMiddleware(http.HandlerFunc(s.HealthHandler))).Methods(http.MethodGet)
+	r.Handle("/accounts", s.loggingMiddleware(http.HandlerFunc(s.CreateAccount))).Methods(http.MethodPost)
+	r.Handle("/accounts/{accountID}", s.loggingMiddleware(http.HandlerFunc(s.GetAccountDetails))).Methods(http.MethodGet)
+	r.Handle("/transactions", s.loggingMiddleware(http.HandlerFunc(s.ProcessTransaction))).Methods(http.MethodPost)
 }

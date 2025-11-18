@@ -11,8 +11,9 @@ import (
 	"github.com/cursed-ninja/internal-transfers-system/internal/config"
 	"github.com/cursed-ninja/internal-transfers-system/internal/migrations"
 	"github.com/cursed-ninja/internal-transfers-system/internal/server"
-	"github.com/cursed-ninja/internal-transfers-system/internal/storage.go"
+	"github.com/cursed-ninja/internal-transfers-system/internal/storage"
 	"github.com/cursed-ninja/internal-transfers-system/internal/utils"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -54,12 +55,12 @@ func main() {
 }
 
 func startServer(cfg *config.Config, server *server.Server, log *zap.Logger) *http.Server {
-	mux := http.NewServeMux()
-	server.BindRoutes(mux)
+	r := mux.NewRouter()
+	server.BindRoutes(r)
 
 	httpSrv := &http.Server{
 		Addr:    cfg.Port,
-		Handler: mux,
+		Handler: r,
 	}
 
 	go func() {

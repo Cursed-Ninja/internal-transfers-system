@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/cursed-ninja/internal-transfers-system/internal/config"
-	"github.com/cursed-ninja/internal-transfers-system/internal/storage.go"
+	"github.com/cursed-ninja/internal-transfers-system/internal/storage"
 )
 
 type Server struct {
