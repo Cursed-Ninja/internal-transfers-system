@@ -71,6 +71,12 @@ func TestCreateAccount(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
+			name:           "negative balance",
+			body:           `{"account_id":"acc-1","initial_balance":"-100"}`,
+			mockSetup:      nil,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name: "duplicate account",
 			body: `{"account_id":"acc-1","initial_balance":"100"}`,
 			mockSetup: func(m *mocks.MockStorage) {
@@ -224,6 +230,12 @@ func TestProcessTransaction(t *testing.T) {
 		{
 			name:           "invalid amount",
 			body:           `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"xyz"}`,
+			mockSetup:      nil,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "non-positive amount",
+			body:           `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"0"}`,
 			mockSetup:      nil,
 			expectedStatus: http.StatusBadRequest,
 		},

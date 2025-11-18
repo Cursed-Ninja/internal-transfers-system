@@ -8,7 +8,6 @@ import (
 	"github.com/cursed-ninja/internal-transfers-system/internal/storage"
 	"github.com/cursed-ninja/internal-transfers-system/internal/utils"
 	"github.com/gorilla/mux"
-	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -45,33 +44,17 @@ func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req.AccountID = strings.TrimSpace(req.AccountID)
-	req.InitialBalance = strings.TrimSpace(req.InitialBalance)
-
-	if req.AccountID == "" {
-		logger.Error("missing account_id in request body")
-		http.Error(w, "account_id is required", http.StatusBadRequest)
-		return
-	}
-
-	if req.InitialBalance == "" {
-		logger.Error("missing balance in request body")
-		http.Error(w, "balance is required", http.StatusBadRequest)
-		return
-	}
-
-	balance, err := decimal.NewFromString(req.InitialBalance)
+	balance, err := ValidateCreateAccount(&req)
 	if err != nil {
-		logger.Error("failed to parse balance to decimal", zap.Error(err))
-		http.Error(w, "balance must be a valid decimal number", http.StatusBadRequest)
+		logger.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ctx, _ = utils.LoggerWithKey(ctx, zap.String("account_id", req.AccountID))
 	ctx, logger = utils.LoggerWithKey(ctx, zap.String("balance", balance.String()))
 
-	err = s.store.CreateAccount(ctx, req.AccountID, balance)
-	if err != nil {
+	if err := s.store.CreateAccount(ctx, req.AccountID, balance); err != nil {
 		logger.Error("failed to create account", zap.Error(err))
 		errorMsg := err.Error()
 		statusCode := http.StatusInternalServerError
@@ -139,32 +122,10 @@ func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req.SourceAccID = strings.TrimSpace(req.SourceAccID)
-	req.DestAccID = strings.TrimSpace(req.DestAccID)
-	req.Amount = strings.TrimSpace(req.Amount)
-
-	if req.SourceAccID == "" {
-		logger.Error("missing source_account_id in request body")
-		http.Error(w, "source_account_id is required", http.StatusBadRequest)
-		return
-	}
-
-	if req.DestAccID == "" {
-		logger.Error("missing destination_account_id in request body")
-		http.Error(w, "destination_account_id is required", http.StatusBadRequest)
-		return
-	}
-
-	if req.Amount == "" {
-		logger.Error("missing amount in request body")
-		http.Error(w, "amount is required", http.StatusBadRequest)
-		return
-	}
-
-	amt, err := decimal.NewFromString(req.Amount)
+	amt, err := ValidateProcessTransaction(&req)
 	if err != nil {
-		logger.Error("failed to parse amount to decimal", zap.Error(err))
-		http.Error(w, "amount must be a valid decimal number", http.StatusBadRequest)
+		logger.Error(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -172,8 +133,7 @@ func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 	ctx, _ = utils.LoggerWithKey(ctx, zap.String("destination_account_id", req.DestAccID))
 	ctx, logger = utils.LoggerWithKey(ctx, zap.String("amount", amt.String()))
 
-	err = s.store.ProcessTransaction(ctx, req.SourceAccID, req.DestAccID, amt)
-	if err != nil {
+	if err := s.store.ProcessTransaction(ctx, req.SourceAccID, req.DestAccID, amt); err != nil {
 		logger.Error("failed to process transaction", zap.Error(err))
 		errorMsg := err.Error()
 		statusCode := http.StatusInternalServerError
