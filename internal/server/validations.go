@@ -18,6 +18,7 @@ var (
 	ErrMissingAmount          = errors.New("amount is required")
 	ErrInvalidAmount          = errors.New("amount must be a valid decimal number")
 	ErrNonPositiveAmount      = errors.New("amount must be positive")
+	ErrSameAccountTransfer    = errors.New("source_account_id and destination_account_id cannot be the same")
 )
 
 // ValidateCreateAccount checks the incoming account creation request for required fields,
@@ -72,6 +73,10 @@ func ValidateProcessTransaction(req *processTransactionRequest) (decimal.Decimal
 
 	if !amt.IsPositive() {
 		return decimal.Zero, ErrNonPositiveAmount
+	}
+
+	if req.SourceAccID == req.DestAccID {
+		return decimal.Zero, ErrSameAccountTransfer
 	}
 
 	return amt, nil

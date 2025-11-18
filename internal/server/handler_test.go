@@ -247,6 +247,12 @@ func TestProcessTransaction(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
+			name:           "same account transfer",
+			body:           `{"source_account_id":"acc-1","destination_account_id":"acc-1","amount":"100"}`,
+			mockSetup:      nil,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name: "insufficient funds",
 			body: `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"50"}`,
 			mockSetup: func(m *mocks.MockStorage) {

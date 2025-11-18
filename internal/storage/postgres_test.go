@@ -139,6 +139,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(decimal.RequireFromString("500.0")))
 				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(decimal.RequireFromString("200.0"), "source").WillReturnResult(sqlmock.NewResult(0, 1))
 				m.ExpectExec(`UPDATE accounts SET balance = balance +`).WithArgs(decimal.RequireFromString("200.0"), "dest").WillReturnResult(sqlmock.NewResult(0, 1))
+				m.ExpectExec(`INSERT INTO transactions`).WithArgs("source", "dest", decimal.RequireFromString("200.0")).WillReturnResult(sqlmock.NewResult(1, 1))
 				m.ExpectCommit()
 			},
 			amount: "200.0",
@@ -195,6 +196,20 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(decimal.RequireFromString("500.0")))
 				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(decimal.RequireFromString("100.0"), "source").WillReturnResult(sqlmock.NewResult(0, 1))
 				m.ExpectExec(`UPDATE accounts SET balance = balance +`).WithArgs(decimal.RequireFromString("100.0"), "dest").WillReturnError(errors.New("update dest error"))
+				m.ExpectRollback()
+			},
+			amount:      "100.0",
+			expectedErr: ErrProcessTransactionMsg,
+		},
+		{
+			name: "insert transaction error",
+			prepare: func(m sqlmock.Sqlmock) {
+				m.ExpectBegin()
+				m.ExpectQuery(`SELECT 1 FROM accounts`).WithArgs("dest").WillReturnRows(sqlmock.NewRows([]string{"1"}).AddRow(1))
+				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(decimal.RequireFromString("500.0")))
+				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(decimal.RequireFromString("100.0"), "source").WillReturnResult(sqlmock.NewResult(0, 1))
+				m.ExpectExec(`UPDATE accounts SET balance = balance +`).WithArgs(decimal.RequireFromString("100.0"), "dest").WillReturnResult(sqlmock.NewResult(0, 1))
+				m.ExpectExec(`INSERT INTO transactions`).WithArgs("source", "dest", decimal.RequireFromString("100.0")).WillReturnError(errors.New("insert transaction error"))
 				m.ExpectRollback()
 			},
 			amount:      "100.0",

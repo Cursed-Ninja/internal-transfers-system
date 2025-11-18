@@ -95,6 +95,7 @@ make fmt
     │   └── config.go              # Config loader and struct definitions
     ├── migrations/
     │   ├── 1763416987_create_accounts.sql  # SQL migration
+    |   ├── 1763513265_create_transactions.sql # SQL migration
     │   └── runner.go              # Migration runner
     ├── server/
     │   ├── handler.go             # HTTP handlers
@@ -166,6 +167,8 @@ curl -X POST http://localhost:8080/transactions \
 - Requests are validated for correctness before processing.
 - Field names in requests must exactly match the expected JSON names; no fuzzy matching is allowed.
 - Rate limiting and caching are not required, as the system is assumed to handle a small scale of requests.
+- Transfers from an account to the same account are not allowed.
+- Amounts are specified with precision up to 5 decimal places.
 
 ## Trade-offs
 

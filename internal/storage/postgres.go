@@ -110,6 +110,11 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 			SET balance = balance + $1
 			WHERE id = $2
 		`
+		// Query to insert transaction log
+		insertTransactionQuery = `
+			INSERT INTO transactions (source_account_id, destination_account_id, amount)
+			VALUES ($1, $2, $3)
+		`
 	)
 	var tx *sql.Tx
 
@@ -171,6 +176,11 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 
 	if _, err = tx.ExecContext(ctx, depositQuery, amount, destAccID); err != nil {
 		logger.Error("failed to update destination account details", zap.Error(err))
+		return errors.New(ErrProcessTransactionMsg)
+	}
+
+	if _, err = tx.ExecContext(ctx, insertTransactionQuery, sourceAccID, destAccID, amount); err != nil {
+		logger.Error("failed to insert transaction record", zap.Error(err))
 		return errors.New(ErrProcessTransactionMsg)
 	}
 
