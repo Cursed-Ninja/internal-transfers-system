@@ -11,6 +11,7 @@ import (
 	"github.com/cursed-ninja/internal-transfers-system/internal/storage"
 	"github.com/cursed-ninja/internal-transfers-system/internal/storage/mocks"
 	"github.com/gorilla/mux"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -41,7 +42,7 @@ func TestCreateAccount(t *testing.T) {
 			name: "success",
 			body: `{"account_id":"acc-1","initial_balance":"100.00"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().CreateAccount(gomock.Any(), "acc-1", 100.00).Return(nil)
+				m.EXPECT().CreateAccount(gomock.Any(), "acc-1", decimal.RequireFromString("100.00")).Return(nil)
 			},
 			expectedStatus: http.StatusCreated,
 		},
@@ -73,7 +74,7 @@ func TestCreateAccount(t *testing.T) {
 			name: "duplicate account",
 			body: `{"account_id":"acc-1","initial_balance":"100"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().CreateAccount(gomock.Any(), "acc-1", 100.00).Return(errors.New(storage.ErrAccountExists))
+				m.EXPECT().CreateAccount(gomock.Any(), "acc-1", decimal.RequireFromString("100")).Return(errors.New(storage.ErrAccountExists))
 			},
 			expectedStatus: http.StatusConflict,
 		},
@@ -81,7 +82,7 @@ func TestCreateAccount(t *testing.T) {
 			name: "internal server error",
 			body: `{"account_id":"acc-1","initial_balance":"100"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().CreateAccount(gomock.Any(), "acc-1", 100.00).Return(assert.AnError)
+				m.EXPECT().CreateAccount(gomock.Any(), "acc-1", decimal.RequireFromString("100")).Return(assert.AnError)
 			},
 			expectedStatus: http.StatusInternalServerError,
 		},
@@ -124,7 +125,7 @@ func TestGetAccountDetails(t *testing.T) {
 			mockSetup: func(m *mocks.MockStorage) {
 				m.EXPECT().GetAccountDetails(gomock.Any(), "acc-1").Return(&storage.Account{
 					ID:      "acc-1",
-					Balance: 150.50,
+					Balance: decimal.RequireFromString("150.50"),
 				}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -191,7 +192,7 @@ func TestProcessTransaction(t *testing.T) {
 			name: "success",
 			body: `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"50.00"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", 50.0).
+				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", decimal.RequireFromString("50.00")).
 					Return(nil)
 			},
 			expectedStatus: http.StatusCreated,
@@ -230,7 +231,7 @@ func TestProcessTransaction(t *testing.T) {
 			name: "insufficient funds",
 			body: `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"50"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", 50.0).
+				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", decimal.RequireFromString("50")).
 					Return(errors.New(storage.ErrInsufficientFundsMsg))
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -239,7 +240,7 @@ func TestProcessTransaction(t *testing.T) {
 			name: "source_account_id not found",
 			body: `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"10"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", 10.0).
+				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", decimal.RequireFromString("10")).
 					Return(errors.New(storage.ErrSourceAccountMsg))
 			},
 			expectedStatus: http.StatusNotFound,
@@ -248,7 +249,7 @@ func TestProcessTransaction(t *testing.T) {
 			name: "destination_account_id not found",
 			body: `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"10"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", 10.0).
+				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", decimal.RequireFromString("10")).
 					Return(errors.New(storage.ErrDestinationAccountMsg))
 			},
 			expectedStatus: http.StatusNotFound,
@@ -257,7 +258,7 @@ func TestProcessTransaction(t *testing.T) {
 			name: "internal server error",
 			body: `{"source_account_id":"acc-1","destination_account_id":"acc-2","amount":"20"}`,
 			mockSetup: func(m *mocks.MockStorage) {
-				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", 20.0).
+				m.EXPECT().ProcessTransaction(gomock.Any(), "acc-1", "acc-2", decimal.RequireFromString("20")).
 					Return(assert.AnError)
 			},
 			expectedStatus: http.StatusInternalServerError,

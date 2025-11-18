@@ -3,6 +3,6 @@
 
 CREATE TABLE IF NOT EXISTS accounts (
     id TEXT PRIMARY KEY,
-    balance REAL NOT NULL DEFAULT 0
+    balance NUMERIC(23, 5) NOT NULL DEFAULT 0
 );
 

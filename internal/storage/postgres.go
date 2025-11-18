@@ -8,6 +8,7 @@ import (
 	"github.com/cursed-ninja/internal-transfers-system/internal/config"
 	"github.com/cursed-ninja/internal-transfers-system/internal/utils"
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,7 @@ func (p *PostgressStorage) DB() *sql.DB {
 	return p.db
 }
 
-func (p *PostgressStorage) CreateAccount(ctx context.Context, accountID string, balance float64) error {
+func (p *PostgressStorage) CreateAccount(ctx context.Context, accountID string, balance decimal.Decimal) error {
 	const query = `
 		INSERT INTO accounts (id, balance)
 		VALUES ($1, $2)
@@ -73,7 +74,7 @@ func (p *PostgressStorage) GetAccountDetails(ctx context.Context, accountID stri
 	return &acc, nil
 }
 
-func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, destAccID string, amount float64) (err error) {
+func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, destAccID string, amount decimal.Decimal) (err error) {
 	const (
 		// Query to check destination Acc exists
 		destExistsQuery = `
@@ -134,8 +135,8 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 		return errors.New(ErrProcessTransactionMsg)
 	}
 
-	var sourceBalance float64
-	if err = tx.QueryRowContext(ctx, sourceBalanceQuery, sourceAccID).Scan(&sourceBalance); err != nil {
+	var balanceStr string
+	if err = tx.QueryRowContext(ctx, sourceBalanceQuery, sourceAccID).Scan(&balanceStr); err != nil {
 		logger.Error("failed to get source account details", zap.Error(err))
 		if errors.Is(err, sql.ErrNoRows) {
 			return errors.New(ErrSourceAccountMsg)
@@ -143,7 +144,12 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 		return errors.New(ErrProcessTransactionMsg)
 	}
 
-	if sourceBalance < amount {
+	sourceBalance, err := decimal.NewFromString(balanceStr)
+	if err != nil {
+		return errors.New(ErrProcessTransactionMsg)
+	}
+
+	if sourceBalance.LessThan(amount) {
 		logger.Error("insufficient funds in source account")
 		return errors.New(ErrInsufficientFundsMsg)
 	}

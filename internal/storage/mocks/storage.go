@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	storage "github.com/cursed-ninja/internal-transfers-system/internal/storage"
+	decimal "github.com/shopspring/decimal"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,7 +43,7 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // CreateAccount mocks base method.
-func (m *MockStorage) CreateAccount(ctx context.Context, accountID string, balance float64) error {
+func (m *MockStorage) CreateAccount(ctx context.Context, accountID string, balance decimal.Decimal) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateAccount", ctx, accountID, balance)
 	ret0, _ := ret[0].(error)
@@ -71,7 +72,7 @@ func (mr *MockStorageMockRecorder) GetAccountDetails(ctx, accountID any) *gomock
 }
 
 // ProcessTransaction mocks base method.
-func (m *MockStorage) ProcessTransaction(ctx context.Context, sourceAccID, destAccID string, amount float64) error {
+func (m *MockStorage) ProcessTransaction(ctx context.Context, sourceAccID, destAccID string, amount decimal.Decimal) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessTransaction", ctx, sourceAccID, destAccID, amount)
 	ret0, _ := ret[0].(error)

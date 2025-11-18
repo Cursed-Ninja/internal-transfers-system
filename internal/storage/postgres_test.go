@@ -9,6 +9,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,13 +32,13 @@ func TestCreateAccountSuccess(t *testing.T) {
 	}{
 		{
 			name:   "success",
-			args:   []driver.Value{"acc-1", 100.0},
+			args:   []driver.Value{"acc-1", "100"},
 			result: sqlmock.NewResult(1, 1),
 			err:    nil,
 		},
 		{
 			name:        "duplicate account",
-			args:        []driver.Value{"acc-1", 100.0},
+			args:        []driver.Value{"acc-1", "100"},
 			err:         &pq.Error{Code: "23505"},
 			expectedErr: ErrAccountExists,
 		},
@@ -56,7 +57,7 @@ func TestCreateAccountSuccess(t *testing.T) {
 				expect.WillReturnResult(tc.result)
 			}
 
-			err := store.CreateAccount(ctx, "acc-1", 100.0)
+			err := store.CreateAccount(ctx, "acc-1", decimal.RequireFromString("100.0"))
 
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
@@ -81,10 +82,10 @@ func TestGetAccountDetails(t *testing.T) {
 			name:      "success",
 			accountID: "acc-1",
 			prepare: func(m sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "balance"}).AddRow("acc-1", 250.5)
+				rows := sqlmock.NewRows([]string{"id", "balance"}).AddRow("acc-1", decimal.RequireFromString("250.5"))
 				m.ExpectQuery(`SELECT id, balance FROM accounts`).WithArgs("acc-1").WillReturnRows(rows)
 			},
-			expectedAcc: &Account{ID: "acc-1", Balance: 250.5},
+			expectedAcc: &Account{ID: "acc-1", Balance: decimal.RequireFromString("250.5")},
 		},
 		{
 			name:      "not found",
@@ -119,25 +120,23 @@ func TestGetAccountDetails(t *testing.T) {
 }
 
 func TestProcessTransaction(t *testing.T) {
-	type testCase struct {
+	tests := []struct {
 		name        string
 		prepare     func(sqlmock.Sqlmock)
-		amount      float64
+		amount      string
 		expectedErr string
-	}
-
-	tests := []testCase{
+	}{
 		{
 			name: "success",
 			prepare: func(m sqlmock.Sqlmock) {
 				m.ExpectBegin()
 				m.ExpectQuery(`SELECT 1 FROM accounts`).WithArgs("dest").WillReturnRows(sqlmock.NewRows([]string{"1"}).AddRow(1))
-				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(500.0))
-				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(200.0, "source").WillReturnResult(sqlmock.NewResult(0, 1))
-				m.ExpectExec(`UPDATE accounts SET balance = balance +`).WithArgs(200.0, "dest").WillReturnResult(sqlmock.NewResult(0, 1))
+				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(decimal.RequireFromString("500.0")))
+				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(decimal.RequireFromString("200.0"), "source").WillReturnResult(sqlmock.NewResult(0, 1))
+				m.ExpectExec(`UPDATE accounts SET balance = balance +`).WithArgs(decimal.RequireFromString("200.0"), "dest").WillReturnResult(sqlmock.NewResult(0, 1))
 				m.ExpectCommit()
 			},
-			amount: 200.0,
+			amount: "200.0",
 		},
 		{
 			name: "destination missing",
@@ -146,7 +145,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectQuery(`SELECT 1 FROM accounts`).WithArgs("dest").WillReturnError(sql.ErrNoRows)
 				m.ExpectRollback()
 			},
-			amount:      200.0,
+			amount:      "200.0",
 			expectedErr: ErrDestinationAccountMsg,
 		},
 		{
@@ -157,7 +156,7 @@ func TestProcessTransaction(t *testing.T) {
 				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnError(sql.ErrNoRows)
 				m.ExpectRollback()
 			},
-			amount:      200.0,
+			amount:      "200.0",
 			expectedErr: ErrSourceAccountMsg,
 		},
 		{
@@ -165,10 +164,10 @@ func TestProcessTransaction(t *testing.T) {
 			prepare: func(m sqlmock.Sqlmock) {
 				m.ExpectBegin()
 				m.ExpectQuery(`SELECT 1 FROM accounts`).WithArgs("dest").WillReturnRows(sqlmock.NewRows([]string{"1"}).AddRow(1))
-				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(50.0))
+				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(decimal.RequireFromString("50.0")))
 				m.ExpectRollback()
 			},
-			amount:      100.0,
+			amount:      "100.0",
 			expectedErr: ErrInsufficientFundsMsg,
 		},
 		{
@@ -176,11 +175,11 @@ func TestProcessTransaction(t *testing.T) {
 			prepare: func(m sqlmock.Sqlmock) {
 				m.ExpectBegin()
 				m.ExpectQuery(`SELECT 1 FROM accounts`).WithArgs("dest").WillReturnRows(sqlmock.NewRows([]string{"1"}).AddRow(1))
-				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(500.0))
-				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(100.0, "source").WillReturnError(errors.New("update source error"))
+				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(decimal.RequireFromString("500.0")))
+				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(decimal.RequireFromString("100.0"), "source").WillReturnError(errors.New("update source error"))
 				m.ExpectRollback()
 			},
-			amount:      100.0,
+			amount:      "100.0",
 			expectedErr: ErrProcessTransactionMsg,
 		},
 		{
@@ -188,12 +187,12 @@ func TestProcessTransaction(t *testing.T) {
 			prepare: func(m sqlmock.Sqlmock) {
 				m.ExpectBegin()
 				m.ExpectQuery(`SELECT 1 FROM accounts`).WithArgs("dest").WillReturnRows(sqlmock.NewRows([]string{"1"}).AddRow(1))
-				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(500.0))
-				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(100.0, "source").WillReturnResult(sqlmock.NewResult(0, 1))
-				m.ExpectExec(`UPDATE accounts SET balance = balance +`).WithArgs(100.0, "dest").WillReturnError(errors.New("update dest error"))
+				m.ExpectQuery(`SELECT balance FROM accounts`).WithArgs("source").WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(decimal.RequireFromString("500.0")))
+				m.ExpectExec(`UPDATE accounts SET balance = balance -`).WithArgs(decimal.RequireFromString("100.0"), "source").WillReturnResult(sqlmock.NewResult(0, 1))
+				m.ExpectExec(`UPDATE accounts SET balance = balance +`).WithArgs(decimal.RequireFromString("100.0"), "dest").WillReturnError(errors.New("update dest error"))
 				m.ExpectRollback()
 			},
-			amount:      100.0,
+			amount:      "100.0",
 			expectedErr: ErrProcessTransactionMsg,
 		},
 	}
@@ -206,11 +205,7 @@ func TestProcessTransaction(t *testing.T) {
 
 			tc.prepare(mock)
 
-			amount := tc.amount
-			if amount == 0 {
-				amount = 200.0
-			}
-			err := store.ProcessTransaction(ctx, "source", "dest", amount)
+			err := store.ProcessTransaction(ctx, "source", "dest", decimal.RequireFromString((tc.amount)))
 			if tc.expectedErr == "" {
 				assert.NoError(t, err)
 			} else {

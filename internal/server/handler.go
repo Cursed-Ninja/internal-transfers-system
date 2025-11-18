@@ -2,14 +2,13 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/cursed-ninja/internal-transfers-system/internal/storage"
 	"github.com/cursed-ninja/internal-transfers-system/internal/utils"
 	"github.com/gorilla/mux"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -61,15 +60,15 @@ func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := strconv.ParseFloat(req.InitialBalance, 64)
+	balance, err := decimal.NewFromString(req.InitialBalance)
 	if err != nil {
-		logger.Error("failed to parse balance to float")
+		logger.Error("failed to parse balance to decimal", zap.Error(err))
 		http.Error(w, "balance must be a valid decimal number", http.StatusBadRequest)
 		return
 	}
 
 	ctx, _ = utils.LoggerWithKey(ctx, zap.String("account_id", req.AccountID))
-	ctx, logger = utils.LoggerWithKey(ctx, zap.Float64("balance", balance))
+	ctx, logger = utils.LoggerWithKey(ctx, zap.String("balance", balance.String()))
 
 	err = s.store.CreateAccount(ctx, req.AccountID, balance)
 	if err != nil {
@@ -117,7 +116,7 @@ func (s *Server) GetAccountDetails(w http.ResponseWriter, r *http.Request) {
 
 	response := accountResponse{
 		ID:      acc.ID,
-		Balance: fmt.Sprint(acc.Balance),
+		Balance: acc.Balance.String(),
 	}
 
 	logger.Info("account details retrieved successfully")
@@ -162,16 +161,16 @@ func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	amt, err := strconv.ParseFloat(req.Amount, 64)
+	amt, err := decimal.NewFromString(req.Amount)
 	if err != nil {
-		logger.Error("failed to parse amount to float")
+		logger.Error("failed to parse amount to decimal", zap.Error(err))
 		http.Error(w, "amount must be a valid decimal number", http.StatusBadRequest)
 		return
 	}
 
 	ctx, _ = utils.LoggerWithKey(ctx, zap.String("source_account_id", req.SourceAccID))
 	ctx, _ = utils.LoggerWithKey(ctx, zap.String("destination_account_id", req.DestAccID))
-	ctx, logger = utils.LoggerWithKey(ctx, zap.Float64("amount", amt))
+	ctx, logger = utils.LoggerWithKey(ctx, zap.String("amount", amt.String()))
 
 	err = s.store.ProcessTransaction(ctx, req.SourceAccID, req.DestAccID, amt)
 	if err != nil {
