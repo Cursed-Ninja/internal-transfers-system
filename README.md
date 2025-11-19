@@ -22,16 +22,16 @@ It follows a layered architecture with separate API and database layers.
 
 ## 📦 Tech Stack & Dependencies
 
-- **Language / Runtime:** Go
-- **Database:** PostgreSQL
+- **Language / Runtime:** [Go](https://golang.org/)
+- **Database:** [PostgreSQL](https://www.postgresql.org/)
 - **Key Libraries:**
-  - `gorilla/mux` – HTTP request routing
-  - `zap` – Structured logging
-  - `pq` – PostgreSQL driver
-  - `shopspring/decimal` – Precise decimal handling for account balances
+  - [`gorilla/mux`](https://github.com/gorilla/mux) – HTTP request routing
+  - [`zap`](https://github.com/uber-go/zap) – Structured logging
+  - [`pq`](https://github.com/lib/pq) – PostgreSQL driver
+  - [`shopspring/decimal`](https://github.com/shopspring/decimal) – Precise decimal handling for account balances
 - **Development Tools:**
-  - Docker
-  - Makefile
+  - [Docker](https://www.docker.com/) – Containerization
+  - [Make](https://www.gnu.org/software/make/) – Build automation
 
 ---
 
