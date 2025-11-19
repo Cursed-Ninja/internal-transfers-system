@@ -29,12 +29,12 @@ func Run(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
 	}
 
 	for _, m := range migs {
-		logger.Info("Applying migration", zap.String("migration", m.name))
+		logger.Info("applying migration", zap.String("migration", m.name))
 		if _, err := db.ExecContext(ctx, m.sql); err != nil {
-			logger.Error("Migration failed", zap.String("migration", m.name), zap.Error(err))
-			return fmt.Errorf("apply migration %s: %w", m.name, err)
+			logger.Error("migration failed", zap.String("migration", m.name), zap.Error(err))
+			return fmt.Errorf("failed to apply migration %s: %w", m.name, err)
 		}
-		logger.Info("Migration applied", zap.String("migration", m.name))
+		logger.Info("migration applied", zap.String("migration", m.name))
 	}
 	return nil
 }
@@ -56,7 +56,7 @@ func loadMigrations() ([]migration, error) {
 		}
 		content, err := migrationFiles.ReadFile(entry.Name())
 		if err != nil {
-			return nil, fmt.Errorf("read migration %s: %w", entry.Name(), err)
+			return nil, fmt.Errorf("failed to read migration %s: %w", entry.Name(), err)
 		}
 		migs = append(migs, migration{
 			name: entry.Name(),

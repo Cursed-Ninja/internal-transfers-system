@@ -40,6 +40,8 @@ func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := utils.ContextLogger(ctx)
 
+	logger.Info("received CreateAccount request")
+
 	var req createAccountRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -50,7 +52,7 @@ func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 	balance, err := ValidateCreateAccount(&req)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("failed to validate request", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -77,6 +79,8 @@ func (s *Server) CreateAccount(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetAccountDetails(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := utils.ContextLogger(ctx)
+
+	logger.Info("received GetAccountDetails request")
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -107,18 +111,21 @@ func (s *Server) GetAccountDetails(w http.ResponseWriter, r *http.Request) {
 		Balance: acc.Balance.String(),
 	}
 
-	logger.Info("account details retrieved successfully")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		logger.Error("failed to encode response", zap.Error(err))
 		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		return
 	}
+
+	logger.Info("account details retrieved successfully")
 }
 
 // ProcessTransaction handles POST /transactions requests to transfer funds between accounts.
 func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := utils.ContextLogger(ctx)
+
+	logger.Info("received ProcessTransaction request")
 
 	var req processTransactionRequest
 
@@ -130,7 +137,7 @@ func (s *Server) ProcessTransaction(w http.ResponseWriter, r *http.Request) {
 
 	amt, err := ValidateProcessTransaction(&req)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("failed to validate request", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

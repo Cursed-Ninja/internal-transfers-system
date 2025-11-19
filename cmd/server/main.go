@@ -48,7 +48,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
-	logger.Info("Shutdown signal received")
+	logger.Info("shutdown signal received")
 
 	// Stop the server gracefully
 	stopServer(ctx, httpSrv, logger)
@@ -67,7 +67,7 @@ func startServer(cfg *config.Config, server *server.Server, log *zap.Logger) *ht
 	go func() {
 		log.Info("HTTP server listening", zap.String("port", cfg.Port))
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("Failed to listen and serve", zap.Error(err))
+			log.Fatal("failed to listen and serve", zap.Error(err))
 		}
 	}()
 	return httpSrv
@@ -78,7 +78,7 @@ func stopServer(ctx context.Context, httpSrv *http.Server, log *zap.Logger) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	if err := httpSrv.Shutdown(ctx); err != nil {
-		log.Error("Failed to shutdown HTTP server", zap.Error(err))
+		log.Error("failed to shutdown HTTP server", zap.Error(err))
 	}
-	log.Info("Server stopped")
+	log.Info("server stopped")
 }

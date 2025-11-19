@@ -46,7 +46,7 @@ func (p *PostgressStorage) CreateAccount(ctx context.Context, accountID string, 
 
 	_, err := p.db.ExecContext(ctx, query, accountID, balance)
 	if err != nil {
-		logger.Error("Failed to create account", zap.Error(err))
+		logger.Error("failed to create account", zap.Error(err))
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == "23505" {
 				return errors.New(ErrAccountExists)
@@ -71,7 +71,7 @@ func (p *PostgressStorage) GetAccountDetails(ctx context.Context, accountID stri
 	var acc Account
 	err := p.db.QueryRowContext(ctx, query, accountID).Scan(&acc.ID, &acc.Balance)
 	if err != nil {
-		logger.Error("Failed to get account details", zap.Error(err))
+		logger.Error("failed to get account details", zap.Error(err))
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New(ErrAccountNotFound)
 		}
@@ -122,7 +122,7 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 
 	tx, err = p.db.BeginTx(ctx, nil)
 	if err != nil {
-		logger.Error("Failed to create transaction", zap.Error(err))
+		logger.Error("failed to create transaction", zap.Error(err))
 		return errors.New(ErrProcessTransactionMsg)
 	}
 
@@ -165,7 +165,7 @@ func (p *PostgressStorage) ProcessTransaction(ctx context.Context, sourceAccID, 
 	}
 
 	if sourceBalance.LessThan(amount) {
-		logger.Error("insufficient funds in source account")
+		logger.Error("insufficient funds in source account", zap.String("source_balance", sourceBalance.String()))
 		return errors.New(ErrInsufficientFundsMsg)
 	}
 
