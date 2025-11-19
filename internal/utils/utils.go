@@ -39,7 +39,7 @@ func GetLogger(appEnv config.AppEnv) *zap.Logger {
 // LoggerWithKey adds a field to the logger in the context and returns the updated context and logger.
 func LoggerWithKey(ctx context.Context, field zap.Field) (context.Context, *zap.Logger) {
 	logger := ContextLogger(ctx)
-	logger.With(field)
+	logger = logger.With(field)
 	ctx = context.WithValue(ctx, LoggerContextKey, logger)
 	return ctx, logger
 }
